@@ -9,7 +9,7 @@ from llvmlite import binding
 
 int_type = IntType(32)
 float_type = DoubleType()
-string_type = None
+# string_type = FunctionType(VoidType(), [])
 bool_type = IntType(1)
 
 void_type = VoidType()
@@ -18,7 +18,7 @@ versions={'fstr':0}
 typemap = {
     'int': int_type,
     'float': float_type,
-    'string': string_type,
+    # 'string': string_type,
     'bool': bool_type,
     'void': void_type
 }
@@ -43,34 +43,14 @@ class GenerateLLVM(object):
         self.globals = {}
         self.locals = {}
         self.temps = {}
-        self.declare_runtime_library()
-        # self._declare_print_function_int()
-        # self._declare_print_function_float()
+        self.declare_print()
         self.last_branch = None
 
 
-    def declare_runtime_library(self):
+    def declare_print(self):
 
-        self.printf= {}
+        self.printf= Function(self.module, FunctionType(IntType(32), [IntType(8).as_pointer()], var_arg=True), name="printf")
 
-
-        self.printf['_print_int'] = Function(self.module, FunctionType(IntType(32), [IntType(8).as_pointer()], var_arg=True), name="printf")
-        #
-        # self.printf['_print_float'] = Function(self.module, FunctionType(DoubleType(), [IntType(8).as_pointer()], var_arg=True), name="printf")
-
-
-    def _declare_print_function_int(self):
-        voidptr_ty = IntType(8).as_pointer()
-        printf_ty = FunctionType(IntType(32), [voidptr_ty], var_arg=True)
-        printf = Function(self.module, printf_ty, name="printf")
-        self.printf = printf
-
-
-    def _declare_print_function_float(self):
-        voidptr_ty = IntType(8).as_pointer()
-        printf_ty = FunctionType(DoubleType(), [voidptr_ty], var_arg=True)
-        printfloat = Function(self.module, printf_ty, name="printf")
-        self.printf = printfloat
 
 
     def start_function(self, name, rettypename, parmtypenames):
@@ -135,14 +115,17 @@ class GenerateLLVM(object):
     def emit_literal_bool(self, value, target):
         self.temps[target] = Constant(bool_type, value)
 
-    def emit_literal_string(self, value, target):
-        # print(value)
-        # print(target)
-        self.temps[target] = Constant(string_type, value)
-        # print(self.temps[target])
+    def emit_literal_str(self, value, target):
+        value=value+'\0'
+        c_str_val = Constant(ArrayType(IntType(8), len(value)),
+                                bytearray(value.encode("utf8")))
+        var = self.builder.alloca(c_str_val.type,name=target)
+        self.builder.store(c_str_val, var)
+        self.temps[target] =  var
 
     def emit_alloc_int(self, name):
         var = self.builder.alloca(int_type, name=name)
+
         var.initializer = Constant(int_type, 0)
         self.locals[name] = var
 
@@ -331,7 +314,7 @@ class GenerateLLVM(object):
         global_fmt.global_constant = True
         global_fmt.initializer = c_fmt
         fmt_arg = self.builder.bitcast(global_fmt, voidptr_ty)
-        self.builder.call(self.printf['_print_int'], [fmt_arg, value])
+        self.builder.call(self.printf, [fmt_arg, value])
 
     def emit_print_float(self, source):
         value=self.temps[source]
@@ -345,11 +328,21 @@ class GenerateLLVM(object):
         global_fmt.global_constant = True
         global_fmt.initializer = c_fmt
         fmt_arg = self.builder.bitcast(global_fmt, voidptr_ty)
-        self.builder.call(self.printf['_print_float'], [fmt_arg, value])
+        self.builder.call(self.printf, [fmt_arg, value])
 
 
-    # def emit_print_str(self, source):
-    #     print(self.temps)
+    def emit_print_str(self, source):
+        value=self.temps[source]
+        voidptr_ty = IntType(8).as_pointer()
+        fmt = "%s \n\0"
+        c_fmt = Constant(ArrayType(IntType(8), len(fmt)),
+                        bytearray(fmt.encode("utf8")))
+        global_fmt = GlobalVariable(self.module, c_fmt.type, name=new_temp('fstr'))
+        global_fmt.linkage = 'internal'
+        global_fmt.global_constant = True
+        global_fmt.initializer = c_fmt
+        fmt_arg = self.builder.bitcast(global_fmt, voidptr_ty)
+        self.builder.call(self.printf, [fmt_arg, value])
 
 
     def emit_call_func(self, funcname, *args):
