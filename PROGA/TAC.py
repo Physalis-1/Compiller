@@ -10,8 +10,6 @@ def new_temp(typeobj):
     versions[typeobj] += 1
     return name
 
-
-
 def elem_in_expr(elem, e, table, func):
     t=[]
     if elem.parts[e].type == 'unar_operator':
@@ -111,10 +109,29 @@ def elem_without_expr(elem, table, func):
 
 def abstrack_exrp(t1,t2,operator):
     t=[]
-    if t1[2] == 'f':
+    if t1[2]== 'f' and t2[2]=='i':
         u = 'float'
+        elem=new_temp(u)
+        t.append(('int_to_float',t2,elem))
+        t2=elem
+    elif t1[2]== 'i' and t2[2]=='f':
+        u = 'float'
+        elem=new_temp(u)
+        t.append(('int_to_float',t1,elem))
+        t1=elem
+    elif t1[2]== 'i' and t2[2]=='i' and operator=='/':
+        u = 'float'
+        elem=new_temp(u)
+        elem2=new_temp(u)
+        t.append(('int_to_float',t1,elem))
+        t.append(('int_to_float', t2, elem2))
+        t1=elem
+        t2=elem2
     else:
-        u = 'int'
+        if t1[2] == 'f' :
+            u = 'float'
+        else:
+            u = 'int'
     if operator == '*':
         t.append(('mul_' + u, t1, t2, new_temp(u)))
     elif operator == '/':
@@ -151,7 +168,8 @@ def expression(elem,table,func):
                 t.append(t2[n])
             t3 = abstrack_exrp(t1[len(t1) - 1][len(t1[len(t1) - 1]) - 1], t2[len(t2) - 1][len(t2[len(t2) - 1]) - 1],
                                elem.parts[1])
-            t.append(t3[0])
+            for iy in range(0, len(t3)):
+                t.append(t3[iy])
         return t
     if len(elem.parts)==1:
         return t
@@ -162,7 +180,8 @@ def expression(elem,table,func):
             t.append(t2[n])
         t3 = abstrack_exrp(element, t2[len(t2) - 1][len(t2[len(t2) - 1]) - 1],
                            elem.parts[1])
-        t.append(t3[0])
+        for iy in range(0, len(t3)):
+            t.append(t3[iy])
 
     elif datchik == 2:
         t1 = copy.deepcopy(elem_in_expr(elem, 0, table, func))
@@ -171,7 +190,8 @@ def expression(elem,table,func):
             t.append(t1[n])
         t3 = abstrack_exrp(t1[len(t1) - 1][len(t1[len(t1) - 1]) - 1], element,
                            elem.parts[1])
-        t.append(t3[0])
+        for iy in range (0,len(t3)):
+            t.append(t3[iy])
     elif datchik == 3:
         element = t[len(t) - 1][len(t[len(t) - 1]) - 1]
         element_1 = t_1[len(t_1) - 1][len(t_1[len(t_1) - 1]) - 1]
@@ -179,7 +199,8 @@ def expression(elem,table,func):
             t.append(t_1[n])
         t3 = abstrack_exrp(element, element_1,
                            elem.parts[1])
-        t.append(t3[0])
+        for iy in range(0, len(t3)):
+            t.append(t3[iy])
     return t
 
 def call_func_proc_param(elem, table, func,types):
@@ -313,6 +334,11 @@ def abstract_body(elem,table,func):
             k=assign_bock(elem.parts[i],table,func)
             for j in range (0, len(k)):
                 t.append(k[j])
+        elif elem.parts[i].type == 'BREAK_CONTINUE':
+            if elem.parts[i].parts[0]=='break':
+                t.append(('break', ))
+            else:
+                t.append(('continue',))
         elif elem.parts[i].type == 'procedure_statement':
             k=[]
             k = call_func_proc_param(elem.parts[i].parts[0], table, func, 'proc')
@@ -353,8 +379,6 @@ def abstract_body(elem,table,func):
                     k1.append(k[z][z1])
             t.append([logic_expr(elem.parts[i],table,func), k1])
     return t
-
-
 
 def start(tree,table):
     global int_val
