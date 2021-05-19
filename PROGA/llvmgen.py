@@ -9,7 +9,6 @@ from llvmlite import binding
 
 int_type = IntType(32)
 float_type = DoubleType()
-# string_type = FunctionType(VoidType(), [])
 bool_type = IntType(1)
 
 void_type = VoidType()
@@ -18,7 +17,6 @@ versions={'fstr':0}
 typemap = {
     'int': int_type,
     'float': float_type,
-    # 'string': string_type,
     'bool': bool_type,
     'void': void_type
 }
@@ -382,6 +380,9 @@ class GenerateLLVM(object):
 
     def emit_return_void(self):
         self.branch(self.exit_block)
+
+    def emit_int_to_float(self, source, target):
+        self.temps[target] = self.builder.sitofp(self.temps[source], DoubleType(),name=target)
 
 class GenerateBlocksLLVM(object):
 
