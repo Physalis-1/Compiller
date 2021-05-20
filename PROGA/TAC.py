@@ -464,22 +464,35 @@ def start(tree,table):
                 # types.append(('None'))
                 params.append(('None',))
 
+
             temporary.append(params)
             temporary_var=[]
             # var functions
+            if tree[1].parts[i].parts[0].type == 'function_head':
+                if tree[1].parts[i].parts[0].parts[2].parts[0] == 'integer':
+                    c = 'int'
+                    x = int_val
+                else:
+                    c = 'float'
+                    x = float_val
+                str_lit = new_temp(c)
+                temporary_var.append(('alloc_' + c, tree[1].parts[i].parts[0].parts[0]))
+                temporary_var.append(('literal_' + c, x, str_lit))
+                temporary_var.append(
+                    ('store_' + c, str_lit, tree[1].parts[i].parts[0].parts[0]))
             if tree[1].parts[i].parts[1].parts[0] != None:
-                if tree[1].parts[i].parts[0].type == 'function_head':
-                    if tree[1].parts[i].parts[0].parts[2].parts[0]== 'integer':
-                        c = 'int'
-                        x = int_val
-                    else:
-                        c = 'float'
-                        x = float_val
-                    str_lit = new_temp(c)
-                    temporary_var.append(('alloc_' + c, tree[1].parts[i].parts[0].parts[0]))
-                    temporary_var.append(('literal_' + c, x, str_lit))
-                    temporary_var.append(
-                        ('store_' + c, str_lit, tree[1].parts[i].parts[0].parts[0]))
+                # if tree[1].parts[i].parts[0].type == 'function_head':
+                #     if tree[1].parts[i].parts[0].parts[2].parts[0]== 'integer':
+                #         c = 'int'
+                #         x = int_val
+                #     else:
+                #         c = 'float'
+                #         x = float_val
+                #     str_lit = new_temp(c)
+                #     temporary_var.append(('alloc_' + c, tree[1].parts[i].parts[0].parts[0]))
+                #     temporary_var.append(('literal_' + c, x, str_lit))
+                #     temporary_var.append(
+                #         ('store_' + c, str_lit, tree[1].parts[i].parts[0].parts[0]))
 
                 # print(tree[1].parts[i].parts[0].parts[0])
                 # print(tree[1].parts[i].parts[0].parts[2].parts[0])
