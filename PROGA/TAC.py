@@ -4,6 +4,7 @@ import copy
 float_val=0.0
 int_val=0
 versions={'int':0,'float':0, 'bool':0,'str':0}
+
 def new_temp(typeobj):
     global versions
     name = "__%s_%d" % (typeobj, versions[typeobj])
@@ -207,11 +208,12 @@ def call_func_proc_param(elem, table, func,types):
     k=[]
     t=[]
     el=[]
-    for i in range (0, len(elem.parts[1].parts)):
-        if elem.parts[1].parts[i].type=='expression':
-            k.append(expression(elem.parts[1].parts[i],table,func))
-        else:
-            k.append(elem_without_expr(elem.parts[1].parts[i],table,func))
+    if elem.parts[1].parts[0]!=None:
+        for i in range (0, len(elem.parts[1].parts)):
+            if elem.parts[1].parts[i].type=='expression':
+                k.append(expression(elem.parts[1].parts[i],table,func))
+            else:
+                k.append(elem_without_expr(elem.parts[1].parts[i],table,func))
     el.append('call_'+types)
     el.append(elem.parts[0])
     for i in range(0, len(k)):
@@ -233,6 +235,7 @@ def assign_bock(elem,table,func):
         t = expression(elem.parts[1], table, func)
     elif elem.parts[1].type=='function_statement' :
         t= call_func_proc_param(elem.parts[1], table, func,'func')
+
     else:
         t=elem_without_expr(elem.parts[1], table, func)
     try:
@@ -262,24 +265,49 @@ def logic_expr(elem,table,func):
             t2 = copy.deepcopy(expression(elem.parts[0].parts[4 + datchik], table, func))
         else:
             t2=copy.deepcopy(elem_without_expr( elem.parts[0].parts[4+datchik], table, func))
-        if t1[len(t1)-1][len(t1[len(t1)-1])-1][2]=='i':
-            c='int'
+        if t1[len(t1)-1][len(t1[len(t1)-1])-1][2] == 'f' and t2[len(t2)-1][len(t2[len(t2)-1])-1][2] == 'i':
+            c = 'float'
+            el = new_temp(c)
+            t3.append(('int_to_float', t2[len(t2)-1][len(t2[len(t2)-1])-1], el))
+            t11= t1[len(t1)-1][len(t1[len(t1)-1])-1]
+            t22 = el
+        elif t1[len(t1)-1][len(t1[len(t1)-1])-1][2] == 'i' and t2[len(t2)-1][len(t2[len(t2)-1])-1][2] == 'f':
+            c = 'float'
+            el = new_temp(c)
+            t3.append(('int_to_float', t1[len(t1)-1][len(t1[len(t1)-1])-1], el))
+            t22=t2[len(t2)-1][len(t2[len(t2)-1])-1]
+            t11 = el
+        elif t1[len(t1)-1][len(t1[len(t1)-1])-1][2] == 'i' and t2[len(t2)-1][len(t2[len(t2)-1])-1][2] == 'i':
+            c = 'float'
+            el = new_temp(c)
+            el2 = new_temp(c)
+            t3.append(('int_to_float', t1[len(t1)-1][len(t1[len(t1)-1])-1], el))
+            t3.append(('int_to_float', t2[len(t2)-1][len(t2[len(t2)-1])-1], el2))
+            t11 = el
+            t22 = el2
         else:
-            c='float'
+            if t1[len(t1)-1][len(t1[len(t1)-1])-1][2]=='f':
+                c = 'float'
+                t11=t1[len(t1)-1][len(t1[len(t1)-1])-1]
+                t22=t2[len(t2)-1][len(t2[len(t2)-1])-1]
+            else:
+                c = 'int'
+                t11 = t1[len(t1) - 1][len(t1[len(t1) - 1]) - 1]
+                t22 = t2[len(t2) - 1][len(t2[len(t2) - 1]) - 1]
         if elem.parts[0].parts[3+datchik].type=='comparision':
             if elem.parts[0].parts[3+datchik].parts[0]=='=':
-                t3.append(('eq_'+c,t1[len(t1)-1][len(t1[len(t1)-1])-1],t2[len(t2)-1][len(t2[len(t2)-1])-1],new_temp('bool')))
+                t3.append(('eq_'+c,t11,t22,new_temp('bool')))
             elif elem.parts[0].parts[3+datchik].parts[0]=='>':
-                t3.append(('gt_'+c,t1[len(t1)-1][len(t1[len(t1)-1])-1],t2[len(t2)-1][len(t2[len(t2)-1])-1],new_temp('bool')))
+                t3.append(('gt_'+c,t11,t22,new_temp('bool')))
             elif elem.parts[0].parts[3 + datchik].parts[0] == '<':
-                t3.append(('lt_'+c,t1[len(t1)-1][len(t1[len(t1)-1])-1],t2[len(t2)-1][len(t2[len(t2)-1])-1],new_temp('bool')))
+                t3.append(('lt_'+c,t11,t22,new_temp('bool')))
         elif  elem.parts[0].parts[3+datchik].type=='comparision_x_2':
             if elem.parts[0].parts[3 + datchik].parts[0] == '>' and elem.parts[0].parts[3 + datchik].parts[1] == '=':
-                t3.append(('gt_' + c, t1[len(t1) - 1][len(t1[len(t1) - 1]) - 1],t2[len(t2) - 1][len(t2[len(t2) - 1]) - 1], new_temp('bool')))
+                t3.append(('gt_' + c, t11,t22, new_temp('bool')))
             elif elem.parts[0].parts[3 + datchik].parts[0] == '<' and elem.parts[0].parts[3 + datchik].parts[1] == '=':
-                    t3.append(('le_' + c, t1[len(t1) - 1][len(t1[len(t1) - 1]) - 1],t2[len(t2) - 1][len(t2[len(t2) - 1]) - 1], new_temp('bool')))
+                    t3.append(('le_' + c, t11,t22, new_temp('bool')))
             elif elem.parts[0].parts[3 + datchik].parts[0] == '<' and elem.parts[0].parts[3 + datchik].parts[1] == '>':
-                t3.append(('ne_' + c, t1[len(t1) - 1][len(t1[len(t1) - 1]) - 1],t2[len(t2) - 1][len(t2[len(t2) - 1]) - 1], new_temp('bool')))
+                t3.append(('ne_' + c, t11,t22, new_temp('bool')))
         if elem.parts[0].parts[0 + datchik].parts[0]=='not':
             t3.append(('not_bool',t3[len(t3) - 1][len(t3[len(t3) - 1]) - 1],new_temp('bool')))
         if datchik2>0 :
@@ -409,27 +437,16 @@ def start(tree,table):
             params=[]
             id=0
             if tree[1].parts[i].parts[0].parts[1].parts[0]!=None:
-                # print(tree[1].parts[i].parts[0].parts[1])
                 for j in range (0,len(tree[1].parts[i].parts[0].parts[1].parts),2):
                     for k  in range (0,len(tree[1].parts[i].parts[0].parts[1].parts[j].parts)):
 
                         if tree[1].parts[i].parts[0].parts[1].parts[j+1].parts[0]=='integer':
                             types.append('int')
                             params.append(('parm_int',tree[1].parts[i].parts[0].parts[1].parts[j].parts[k],id))
-                            # params.append(('parm_int', tree[1].parts[i].parts[0].parts[1].parts[j].parts[k]))
-                            # l=new_temp('int')
-                            # params.append(('literal_int', int_val,l))
-                            # params.append(('store_int',l, tree[1].parts[i].parts[0].parts[1].parts[j].parts[k]))
-                            # table[tree[1].parts[i].parts[0].parts[0]][tree[1].parts[i].parts[0].parts[1].parts[j].parts[k]][1]=id
                             id = id + 1
                         elif tree[1].parts[i].parts[0].parts[1].parts[j+1].parts[0]=='real':
                             types.append('float')
                             params.append(('parm_float',tree[1].parts[i].parts[0].parts[1].parts[j].parts[k],id))
-                            # params.append(('parm_float', tree[1].parts[i].parts[0].parts[1].parts[j].parts[k]))
-                            # l = new_temp('float')
-                            # params.append(('literal_float', float_val, l))
-                            # params.append(('store_float', l, tree[1].parts[i].parts[0].parts[1].parts[j].parts[k]))
-                            # table[tree[1].parts[i].parts[0].parts[0]][tree[1].parts[i].parts[0].parts[1].parts[j].parts[k]][1]=id
                             id = id + 1
 
             if tree[1].parts[i].parts[0].type == 'function_head':
@@ -445,7 +462,7 @@ def start(tree,table):
                 types.insert(0,'proc')
             if len(params)==0:
                 # types.append(('None'))
-                params.append(('None'))
+                params.append(('None',))
 
             temporary.append(params)
             temporary_var=[]
