@@ -11,14 +11,16 @@ def run(llvm_ir):
     mod = llvm.parse_assembly(llvm_ir)
     mod.verify()
 
+    pmb = llvm.create_pass_manager_builder()
+    pmb.opt_level = 2
+    pm = llvm.create_module_pass_manager()
+    pmb.populate(pm)
+    pm.run(mod)
     engine = llvm.create_mcjit_compiler(mod, target_machine)
 
-
     init_ptr = engine.get_function_address('__init')
-    # print(init_ptr)
     init_func = ctypes.CFUNCTYPE(None)(init_ptr)
     init_func()
     main_ptr = engine.get_function_address('__init_main')
-    # print(main_ptr)
     main_func = ctypes.CFUNCTYPE(None)(main_ptr)
     main_func()
