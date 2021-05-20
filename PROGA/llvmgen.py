@@ -10,9 +10,9 @@ from llvmlite import binding
 int_type = IntType(32)
 float_type = DoubleType()
 bool_type = IntType(1)
-
 void_type = VoidType()
-versions={'fstr':0}
+break_mass=[]
+continue_mass=[]
 
 typemap = {
     'int': int_type,
@@ -20,7 +20,7 @@ typemap = {
     'bool': bool_type,
     'void': void_type
 }
-
+versions={'fstr':0}
 def new_temp(typeobj):
     global versions
     name = "__%s_%d" % (typeobj, versions[typeobj])
@@ -49,8 +49,6 @@ class GenerateLLVM(object):
 
         self.printf= Function(self.module, FunctionType(IntType(32), [IntType(8).as_pointer()], var_arg=True), name="printf")
 
-
-
     def start_function(self, name, rettypename, parmtypenames):
         rettype = typemap[rettypename]
         parmtypes = [typemap[pname] for pname in parmtypenames]
@@ -63,7 +61,6 @@ class GenerateLLVM(object):
         self.exit_block = self.function.append_basic_block("exit")
         self.locals = {}
         self.temps = {}
-
         if rettype is not void_type:
             self.locals['return'] = self.builder.alloca(rettype, name="return")
 
@@ -84,13 +81,9 @@ class GenerateLLVM(object):
         else:
             self.builder.ret_void()
 
-    def new_basic_block(self, name=''):
-        self.builder = IRBuilder(self.block.instructions)
-        return self.function.append_basic_block(name)
-
-
     def add_block(self, name):
-        return self.function.append_basic_block(name)
+        t=self.function.append_basic_block(name)
+        return t
 
     def set_block(self, block):
         self.block = block
@@ -101,7 +94,7 @@ class GenerateLLVM(object):
 
     def branch(self, next_block):
         if self.last_branch != self.block:
-            self.builder.branch(next_block)
+            t=self.builder.branch(next_block)
         self.last_branch = self.block
 
     def emit_literal_int(self, value, target):
@@ -132,10 +125,6 @@ class GenerateLLVM(object):
         var.initializer = Constant(float_type, 0)
         self.locals[name] = var
 
-    def emit_alloc_bool(self, name):
-        var = self.builder.alloca(bool_type, name=name)
-        var.initializer = Constant(bool_type, 0)
-        self.locals[name] = var
 
     def emit_global_int(self, name):
         var = GlobalVariable(self.module, int_type, name=name)
@@ -145,11 +134,6 @@ class GenerateLLVM(object):
     def emit_global_float(self, name):
         var = GlobalVariable(self.module, float_type, name=name)
         var.initializer = Constant(float_type, 0)
-        self.globals[name] = var
-
-    def emit_global_bool(self, name):
-        var = GlobalVariable(self.module, bool_type, name=name)
-        var.initializer = Constant(bool_type, 0)
         self.globals[name] = var
 
     def lookup_var(self, name):
@@ -164,8 +148,6 @@ class GenerateLLVM(object):
     def emit_load_float(self, name, target):
         self.temps[target] = self.builder.load(self.lookup_var(name), target)
 
-    def emit_load_bool(self, name, target):
-        self.temps[target] = self.builder.load(self.lookup_var(name), target)
 
     def emit_store_int(self, source, target):
         self.builder.store(self.temps[source], self.lookup_var(target))
@@ -173,8 +155,6 @@ class GenerateLLVM(object):
     def emit_store_float(self, source, target):
         self.builder.store(self.temps[source], self.lookup_var(target))
 
-    def emit_store_bool(self, source, target):
-        self.builder.store(self.temps[source], self.lookup_var(target))
 
     def emit_add_int(self, left, right, target):
         self.temps[target] = self.builder.add(
@@ -299,7 +279,6 @@ class GenerateLLVM(object):
     def emit_not_bool(self, source, target):
         self.temps[target] = self.builder.icmp_signed(
             '==', self.temps[source], Constant(bool_type, 0), target)
-    # Print statements
 
     def emit_print_int(self, source):
         value=self.temps[source]
@@ -365,10 +344,6 @@ class GenerateLLVM(object):
         self.builder.store(self.function.args[num], var)
         self.locals[name] = var
 
-    def emit_parm_bool(self, name, num):
-        var = self.builder.alloca(bool_type, name=name)
-        self.builder.store(self.function.args[num], var)
-        self.locals[name] = var
 
     def emit_return_int(self, source):
         self.builder.store(self.temps[source], self.locals['return'])
@@ -381,6 +356,7 @@ class GenerateLLVM(object):
     def emit_return_void(self):
         self.branch(self.exit_block)
 
+
     def emit_int_to_float(self, source, target):
         self.temps[target] = self.builder.sitofp(self.temps[source], DoubleType(),name=target)
 
@@ -390,6 +366,8 @@ class GenerateBlocksLLVM(object):
         self.gen = generator
 
     def perebor(self, func):
+        global continue_mass
+        global break_mass
         i=0
         while (i < len(func)):
             if func[i][0]=='if_block':
@@ -398,6 +376,12 @@ class GenerateBlocksLLVM(object):
             elif func[i][0] == 'while_block':
                 i = i + 1
                 self.visit_WhileBlock(func[i])
+            elif func[i][0] == 'break':
+                self.gen.branch(break_mass[len(break_mass)-1])
+                return
+            elif func[i][0] == 'continue':
+                self.gen.branch(continue_mass[len(continue_mass)-1])
+                return
             else:
                 self.visit_BasicBlock([func[i]])
             i=i+1
@@ -418,7 +402,6 @@ class GenerateBlocksLLVM(object):
             func_return_type = func[0][len(func[0])-1]
             for i in range (2, (len(func[0])-1)):
                 func_parameters.append(func[0][i])
-
         self.gen.start_function(func_name, func_return_type, func_parameters)
         if func_name!='__init_main':
             if len(func) >= 2 and type(func[1]) == list:
@@ -439,32 +422,43 @@ class GenerateBlocksLLVM(object):
 
 
     def visit_IfBlock(self, func):
-        testvar=func[0][len(func[0])-1][len(func[0][len(func[0])-1])-1]
+        if_block = self.gen.add_block("if_block")
+        self.gen.branch(if_block)
+        self.gen.set_block(if_block)
+        result=func[0][len(func[0])-1][len(func[0][len(func[0])-1])-1]
         self.gen.generate_code(func[0])
-        tblock = self.gen.add_block("tblock")
-        fblock = self.gen.add_block("fblock")
-        endblock = self.gen.add_block("endblock")
-        self.gen.cbranch(testvar, tblock, fblock)
-        self.gen.set_block(tblock)
+        true_if_block = self.gen.add_block("true_if_block")
+        false_if_block = self.gen.add_block("false_if_block")
+        end_if_block = self.gen.add_block("end_if_block")
+        self.gen.cbranch(result, true_if_block, false_if_block)
+        self.gen.set_block(true_if_block)
         self.perebor(func[1])
-        self.gen.branch(endblock)
-        self.gen.set_block(fblock)
-        self.gen.branch(endblock)
-        self.gen.set_block(endblock)
+        self.gen.branch(end_if_block)
+        self.gen.set_block(false_if_block)
+        self.gen.branch(end_if_block)
+        self.gen.set_block(end_if_block)
 
     def visit_WhileBlock(self, func):
-        test_block = self.gen.add_block("whiletest")
-        self.gen.branch(test_block)
-        self.gen.set_block(test_block)
+        global continue_mass
+        global break_mass
+        while_block = self.gen.add_block("while_block")
+        self.gen.branch(while_block)
+        self.gen.set_block(while_block)
         self.gen.generate_code(func[0])
-        testvar = func[0][len(func[0]) - 1][len(func[0][len(func[0]) - 1]) - 1]
-        loop_block = self.gen.add_block("loop")
-        after_loop = self.gen.add_block("afterloop")
-        self.gen.cbranch(testvar, loop_block, after_loop)
-        self.gen.set_block(loop_block)
+        result = func[0][len(func[0]) - 1][len(func[0][len(func[0]) - 1]) - 1]
+        true_while_block = self.gen.add_block("true_while_block")
+        end_while_block = self.gen.add_block("end_while_block")
+        self.gen.cbranch(result, true_while_block, end_while_block)
+        continue_mass.append(while_block)
+        break_mass.append(end_while_block)
+        self.gen.set_block(true_while_block)
         self.perebor(func[1])
-        self.gen.branch(test_block)
-        self.gen.set_block(after_loop)
+        self.gen.branch(while_block)
+        self.gen.set_block(end_while_block)
+        continue_mass.pop()
+        break_mass.pop()
+
+
 def compile_llvm(tac):
     generator = GenerateLLVM()
     blockgen = GenerateBlocksLLVM(generator)
@@ -476,7 +470,6 @@ def compile_llvm(tac):
     with open('tt.ll', 'wb') as f:
         f.write(llvm_code.encode('utf-8'))
         f.flush()
-    # print(str(generator.module))
     with tempfile.NamedTemporaryFile(suffix='.ll') as f:
         f.write(llvm_code.encode('utf-8'))
         f.flush()
