@@ -108,15 +108,14 @@ class GenerateLLVM(object):
 
     def emit_literal_str(self, value, target):
         value=value+'\0'
-        c_str_val = Constant(ArrayType(IntType(8), len(value)),
+        str_val = Constant(ArrayType(IntType(8), len(value)),
                                 bytearray(value.encode("utf8")))
-        var = self.builder.alloca(c_str_val.type,name=target)
-        self.builder.store(c_str_val, var)
+        var = self.builder.alloca(str_val.type,name=target)
+        self.builder.store(str_val, var)
         self.temps[target] =  var
 
     def emit_alloc_int(self, name):
         var = self.builder.alloca(int_type, name=name)
-
         var.initializer = Constant(int_type, 0)
         self.locals[name] = var
 
@@ -180,13 +179,18 @@ class GenerateLLVM(object):
         self.temps[target] = self.builder.fmul(
             self.temps[left], self.temps[right], target)
 
-    def emit_div_int(self, left, right, target):
+    def emit_divs_int(self, left, right, target):
         self.temps[target] = self.builder.sdiv(
             self.temps[left], self.temps[right], target)
 
     def emit_div_float(self, left, right, target):
         self.temps[target] = self.builder.fdiv(
             self.temps[left], self.temps[right], target)
+
+    def emit_mod_int(self, left, right, target):
+        self.temps[target] = self.builder.srem(
+            self.temps[left], self.temps[right], target)
+
 
     def emit_uadd_int(self, source, target):
         self.temps[target] = self.builder.add(
@@ -283,27 +287,26 @@ class GenerateLLVM(object):
     def emit_print_int(self, source):
         value=self.temps[source]
         voidptr_ty = IntType(8).as_pointer()
-        fmt = "%i \n\0"
-        c_fmt = Constant(ArrayType(IntType(8), len(fmt)),
-                        bytearray(fmt.encode("utf8")))
-        global_fmt = GlobalVariable(self.module, c_fmt.type, name=new_temp('fstr'))
+        type = "%i \n\0"
+        const_type = Constant(ArrayType(IntType(8), len(type)),
+                        bytearray(type.encode("utf8")))
+        global_fmt = GlobalVariable(self.module, const_type.type, name=new_temp('fstr'))
         global_fmt.linkage = 'internal'
         global_fmt.global_constant = True
-        global_fmt.initializer = c_fmt
+        global_fmt.initializer = const_type
         fmt_arg = self.builder.bitcast(global_fmt, voidptr_ty)
         self.builder.call(self.printf, [fmt_arg, value])
 
     def emit_print_float(self, source):
         value=self.temps[source]
         voidptr_ty = IntType(8).as_pointer()
-        fmt = "%f \n\0"
-        c_fmt = Constant(ArrayType(IntType(8), len(fmt)),
-                        bytearray(fmt.encode("utf8")))
-
-        global_fmt = GlobalVariable(self.module, c_fmt.type, name=new_temp('fstr'))
+        type = "%f \n\0"
+        const_type = Constant(ArrayType(IntType(8), len(type)),
+                        bytearray(type.encode("utf8")))
+        global_fmt = GlobalVariable(self.module, const_type.type, name=new_temp('fstr'))
         global_fmt.linkage = 'internal'
         global_fmt.global_constant = True
-        global_fmt.initializer = c_fmt
+        global_fmt.initializer = const_type
         fmt_arg = self.builder.bitcast(global_fmt, voidptr_ty)
         self.builder.call(self.printf, [fmt_arg, value])
 
@@ -311,13 +314,13 @@ class GenerateLLVM(object):
     def emit_print_str(self, source):
         value=self.temps[source]
         voidptr_ty = IntType(8).as_pointer()
-        fmt = "%s \n\0"
-        c_fmt = Constant(ArrayType(IntType(8), len(fmt)),
-                        bytearray(fmt.encode("utf8")))
-        global_fmt = GlobalVariable(self.module, c_fmt.type, name=new_temp('fstr'))
+        type = "%s \n\0"
+        const_type = Constant(ArrayType(IntType(8), len(type)),
+                        bytearray(type.encode("utf8")))
+        global_fmt = GlobalVariable(self.module, const_type.type, name=new_temp('fstr'))
         global_fmt.linkage = 'internal'
         global_fmt.global_constant = True
-        global_fmt.initializer = c_fmt
+        global_fmt.initializer = const_type
         fmt_arg = self.builder.bitcast(global_fmt, voidptr_ty)
         self.builder.call(self.printf, [fmt_arg, value])
 
@@ -459,13 +462,15 @@ class GenerateBlocksLLVM(object):
         break_mass.pop()
 
 
-def compile_llvm(tac):
+def generate_llvm(tac):
     generator = GenerateLLVM()
     blockgen = GenerateBlocksLLVM(generator)
+
     blockgen.generate_function(tac[0])
     for i in range(0, len(tac[1])):
         blockgen.generate_function(tac[1][i])
     blockgen.generate_function(tac[2])
+
     llvm_code = str(generator.module)
     with open('tt.ll', 'wb') as f:
         f.write(llvm_code.encode('utf-8'))
@@ -476,3 +481,15 @@ def compile_llvm(tac):
     return str(generator.module)
 
 
+
+if __name__ == '__main__':
+    import sys
+    import Parser
+    import Table
+    import TAC
+
+    text = open(sys.argv[1]).read()
+    AST = Parser.start_parser(text)
+    table = Table.table_scope(AST)
+    tac = TAC.start(AST, table)
+    generate_llvm(tac)
