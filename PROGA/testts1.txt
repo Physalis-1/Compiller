@@ -1,3 +1,8 @@
+var a,b,c : integer;
 begin
-    write(300.0);
+a:=5;
+while ((a>4) and (a<=6+3.0) and (a<>9)) or (7.0=a) do begin
+a:=7 mod 2;
+end;
+write(a);
 end.
