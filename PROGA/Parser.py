@@ -2,12 +2,12 @@ from lexer import tokens
 import ply.yacc as yacc
 import AST
 
-
-
-# приоритет операций  сверху внизу: +-, */, унарный оператор чем ниже тем важнее
 precedence = (
+        ('left', 'OR'),
+        ('left', 'AND'),
+        ('nonassoc', 'less','more','equally','lessmore','lessequally','moreequally', 'equallyequally'),
         ('left', 'ARITHMETIC_OPERATOR1'),
-        ('left', 'ARITHMETIC_OPERATOR2'),
+        ('left', 'ARITHMETIC_OPERATOR2','DIV','MOD'),
         ('right', 'UMINUS'),
     )
 
@@ -151,7 +151,7 @@ def p_statement1(p):
 def p_st(p):
     '''st  : BREAK
              | CONTINUE     '''
-    p[0] = AST.Node('BREAK_CONTINUE ', [p[1]])
+    p[0] = AST.Node('BREAK_CONTINUE', [p[1]])
 
 
 def p_text(p):
@@ -174,7 +174,8 @@ def p_function_statement (p):
 
 
 def p_id_name1(p):
-    '''id_name1 : elem1
+    '''id_name1 : empty
+                | elem1
                 | id_name1 COMMA elem1 '''
     if len(p) == 2:
         p[0] = AST.Node('ID', [p[1]])
@@ -183,43 +184,30 @@ def p_id_name1(p):
 
 
 def p_expression_list (p):
-    '''expression_list  : operator1 op_bracket elem1 comparision  elem1 cl_bracket
-                        | expression_list operator operator1 op_bracket  elem1 comparision  elem1 cl_bracket     '''
-    if len(p) == 7:
-        p[0] = AST.Node('expression_list', [p[1], p[2], p[3], p[4], p[5], p[6]])
-    else:
-        p[0] = p[1].add_parts([p[2],p[3],p[4],p[5],p[6],p[7],p[8]])
-
-
-def p_comparision (p):
-    '''comparision  : less
-        | more
-        | equally
-        | less more
-        | less equally
-        | more equally
-        | equally equally '''
-
+    '''expression_list  :  expression_list less  expression_list
+                        | expression_list more  expression_list
+                        | expression_list equally expression_list
+                        | expression_list lessmore expression_list
+                        | expression_list lessequally expression_list
+                        | expression_list moreequally expression_list
+                        | expression_list equallyequally expression_list
+                        | expression_list expression_list expression_list
+                        |  expression_list AND expression_list
+                        |  expression_list OR expression_list
+                        |  NOT op_bracket  expression_list cl_bracket
+                        |  op_bracket  expression_list cl_bracket
+                        |  elem1'''
     if len(p) == 2:
-        p[0] = AST.Node('comparision', [p[1]])
-    elif len(p)== 3:
-        p[0] = AST.Node('comparision_x_2', [p[1], p[2]])
-
-
-def p_operator(p):
-    '''operator : AND
-                | OR   '''
-    # if p[1]=='and':
-    #     p[0] = AST.Node('AND', [p[1]])
-    # else:
-    #     p[0] = AST.Node('OR', [p[1]])
-    p[0] = AST.Node('AND_OR', [p[1]])
-
-
-def p_operator1(p):
-    '''operator1 : NOT
-                |  empty'''
-    p[0] = AST.Node('operator1', [p[1]])
+        p[0] = AST.Node('expression_list_elem', [p[1]])
+    elif len(p)==5:
+        p[0] = AST.Node('expression_list_bracket_NOT', [p[1], p[3]])
+    else:
+        if p[2]=='and' or  p[2]=='or':
+            p[0] = AST.Node('AND_OR', [p[1],p[2], p[3]])
+        elif p[1]=='(' :
+            p[0]=AST.Node('expression_list_bracket', [p[2]])
+        else:
+            p[0] = AST.Node('comparision', [p[1],p[2], p[3]])
 
 
 def p_elem(p):
@@ -233,6 +221,8 @@ def p_elem1(p):
 
     '''elem1 : elem1 ARITHMETIC_OPERATOR1 elem1
            | elem1 ARITHMETIC_OPERATOR2 elem1
+           | elem1 MOD elem1
+           | elem1 DIV elem1
            | ARITHMETIC_OPERATOR1 elem1 %prec UMINUS
            | op_bracket elem1  cl_bracket
            | elem'''
@@ -261,9 +251,9 @@ def start_parser(data):
     return AST.Node.tree(elm)
 
 if __name__ == '__main__':
+    import sys
     parser = yacc.yacc()
-    f = open('testts1.txt')
-    elem = parser.parse(f.read())
+    elem = parser.parse(open(sys.argv[1]).read())
     elem=AST.Node.tree(elem)
     for i in range (0, len(elem)):
         print(elem[i])
