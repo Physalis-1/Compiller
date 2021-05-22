@@ -19,7 +19,10 @@ reserved = {
     'or':'OR',
     'not':'NOT',
     'continue':'CONTINUE',
-    'break':'BREAK'
+    'break':'BREAK',
+    'div':'DIV',
+    'mod':'MOD'
+
 
 }
 tokens = [
@@ -33,6 +36,10 @@ tokens = [
     'more',
     'less',
     'equally',
+    'lessmore',
+    'lessequally',
+     'moreequally',
+     'equallyequally',
     # идентификатор
     'ID',
     # оператор присвоения
@@ -66,6 +73,10 @@ t_colonss=r';'
 t_point=r'\.'
 t_ARITHMETIC_OPERATOR1=r'\+|\-'
 t_ARITHMETIC_OPERATOR2=r'\/|\*'
+t_lessmore=r'\<\>'
+t_lessequally=r'\<\='
+t_moreequally=r'\>\='
+t_equallyequally=r'\=\='
 t_more=r'\>'
 t_less=r'\<'
 t_equally=r'\='
@@ -113,11 +124,13 @@ def t_error(t):
 lexer = lex.lex()
 
 if __name__ == '__main__':
-    f = open('testts1.txt')
-    data=f.read()
+    import sys
+    data= open(sys.argv[1]).read()
     lexer.input(data)
     while True:
         tok = lexer.token()
         if not tok:
             break
         print(tok)
+
+
