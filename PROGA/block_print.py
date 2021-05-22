@@ -1,6 +1,4 @@
-
 def start(tac,id):
-    # print(tac)
     print()
     for i in range (0, len(tac)):
         if type(tac[i])==list:
