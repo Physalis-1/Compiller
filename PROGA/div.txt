@@ -1,0 +1,19 @@
+var
+  a, n,i: integer;
+begin
+  a:=100;
+  write('start');
+  while (n<10) do
+      begin
+          i:=i+1;
+          if (i>a) or (i=a) then
+              begin
+                  write('end');
+                  break;
+              end;
+          if (a mod i = 0) then
+              begin
+                   write(i);
+              end;
+      end;
+end.

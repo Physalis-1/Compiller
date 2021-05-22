@@ -1,0 +1,26 @@
+var
+i, n: integer;
+procedure wr(x:integer);
+begin
+write(x);
+end;
+procedure seq ();
+var
+x:integer;
+begin
+                while (i<n) do
+                begin
+                i:=i+1;
+                x:=x+1;
+                if (i mod 2=0) then
+                begin
+                continue;
+                end;
+                wr(x);
+                end;
+end;
+begin
+n:=10;
+i:=0;
+seq();
+end.

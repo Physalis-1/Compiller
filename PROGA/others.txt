@@ -1,0 +1,27 @@
+var
+a,b,c:integer;
+d,e,f:real;
+begin
+a:=5;
+b:=-1;
+c:=10;
+while (b<2) do
+begin
+    if ((b<a) and (b>0.0) and (b<>300)) or (b>c) then
+    begin
+    write('1 state');
+    end;
+    if not(((b<=a) and (b>0.0)) or (b>=c)) then
+    begin
+    write('2 state');
+    end;
+b:=b+1;
+end;
+d:=14+-1*(6/4-3*(4.5/1.5-3))+(c/a+c mod 3);
+write(d);
+write(10/3);
+write(10 div 3);
+write(10 mod 3);
+write(10/2.5);
+write(4.5/1.5);
+end.

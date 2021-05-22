@@ -1,0 +1,28 @@
+var
+u:integer;
+function power(t, k: integer): integer;
+var
+  res:integer;
+begin
+  res := 1;
+  while (k > 0) do
+  begin
+    if (k mod 2 = 1) then
+    begin
+    res := res * t;
+    end;
+    t := t * t;
+    k := k div 2;
+  end;
+  power := res;
+end;
+begin
+    u:=power(5,3);
+    write('result');//comment
+    { htshsbsthst t
+    16546544
+    tshjuhsw
+    4654
+    jrtjsrj}
+    write(u);
+end.

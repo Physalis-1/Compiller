@@ -1,0 +1,21 @@
+var
+  i, a, b, n, c: integer;
+procedure fib();
+begin
+write(0);write(b);write(c);
+  while (i<n) do
+  begin
+    a := c;
+    c := b;
+    b := a + b;
+    write(b);
+    i:=i+1;
+  end;
+end;
+begin
+  n:=10;
+  b := 1;
+  c := 1;
+  i:=1;
+fib();
+end.
