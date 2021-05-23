@@ -26,3 +26,6 @@
 3) pip install ply
 4) pip install llvmlite
 5) sudo apt install llvm
+
+
+https://disk.yandex.ru/i/50wx82TKW-GbUQ ссылка на видео.
