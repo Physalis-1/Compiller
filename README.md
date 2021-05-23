@@ -18,3 +18,10 @@
 4) промежуточный код (выводит промежуточный код пооделеный на блоки) : python -m TAC [название файла]
 5) генерация кода LLVMlite (генерирует файл tt.ll): python -m llvmgen [название файла]
 6) Компиляция кода посредством LLVMlite: python -m Compiller [название файла]
+
+Для запуска нужно скачать LLVM, LLVMlite, python3, ply, pip.
+1)sudo apt install python3
+2)sudo apt install python3-pip
+3)pip install ply
+4)pip install llvmlite
+5)sudo apt install llvm
