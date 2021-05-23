@@ -490,7 +490,7 @@ def start(tree,table):
     tt = abstract_body(tree[2].parts[0], table, 'global')
     tt.append(('return_void',))
     block[2].append(tt)
-    block[2].insert(0,('func', '__init_main', 'void'))
+    block[2].insert(0,('func', 'main', 'void'))
     return block
 
 
