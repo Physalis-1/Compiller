@@ -406,7 +406,7 @@ class GenerateBlocksLLVM(object):
             for i in range (2, (len(func[0])-1)):
                 func_parameters.append(func[0][i])
         self.gen.start_function(func_name, func_return_type, func_parameters)
-        if func_name!='__init_main':
+        if func_name!='main':
             if len(func) >= 2 and type(func[1]) == list:
                 self.visit_BasicBlock(func[1])
                 self.visit_BasicBlock(func[2])
@@ -473,9 +473,6 @@ def generate_llvm(tac):
 
     llvm_code = str(generator.module)
     with open('tt.ll', 'wb') as f:
-        f.write(llvm_code.encode('utf-8'))
-        f.flush()
-    with tempfile.NamedTemporaryFile(suffix='.ll') as f:
         f.write(llvm_code.encode('utf-8'))
         f.flush()
     return str(generator.module)
