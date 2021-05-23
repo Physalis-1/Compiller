@@ -21,8 +21,8 @@
 
 Для запуска нужно скачать LLVM, LLVMlite, python3, ply, pip.
 <!-- Файлы с примерами: -->
-1)sudo apt install python3
-2)sudo apt install python3-pip
-3)pip install ply
-4)pip install llvmlite
-5)sudo apt install llvm
+1) sudo apt install python3
+2) sudo apt install python3-pip
+3) pip install ply
+4) pip install llvmlite
+5) sudo apt install llvm
