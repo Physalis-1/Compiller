@@ -40,13 +40,17 @@ if __name__ == '__main__':
     import llvmgen
     text = open(sys.argv[1]).read()
     AST = Parser.start_parser(text)
-    for i in range(0, len(AST)):
-        print(AST[i])
+    # вывод дерева
+    # for i in range(0, len(AST)):
+    #     print(AST[i])
     table = Table.table_scope(AST)
-    print_table(table)
+    # вывод символьной таблицы
+    # print_table(table)
     tac = TAC.start(AST, table)
-    block_print.start(tac, 0)
+    # вывод промежуточного
+    # block_print.start(tac, 0)
     code_gen = llvmgen.generate_llvm(tac)
-    print(code_gen)
+    # вывод сгенеренного LLVMlite
+    # print(code_gen)
     Compiller.run(code_gen)
 
