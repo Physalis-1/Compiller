@@ -1,4 +1,5 @@
 # Compiller
+https://disk.yandex.ru/i/50wx82TKW-GbUQ ссылка на видео.
 Компилятор под Pascal на Phyton c PLY и LLVMlite.
 <!-- Файлы с примерами: -->
 Файлы с примерами:
@@ -28,4 +29,3 @@
 5) sudo apt install llvm
 
 
-https://disk.yandex.ru/i/50wx82TKW-GbUQ ссылка на видео.
