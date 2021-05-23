@@ -1,0 +1,26 @@
+var a,b,c : integer;
+ h : real;
+function sqrt (a: integer) : real;
+var b,c : integer;
+d,e,f,g : real;
+begin
+c := b * b;
+while ( c <= a ) do
+begin
+b := b + 1;
+c := b * b;
+end;
+b := b - 1;
+d := a - b * b;
+e := a * 2;
+f := d / e;
+g := b + f;
+d := f * f;
+e := 2 * g;
+f := g - d / e;
+sqrt := f;
+end;
+begin
+h := sqrt(16);
+write(h);
+end.
