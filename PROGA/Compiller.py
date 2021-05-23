@@ -21,9 +21,14 @@ def run(llvm_ir):
     init_ptr = engine.get_function_address('__init')
     init_func = ctypes.CFUNCTYPE(None)(init_ptr)
     init_func()
-    main_ptr = engine.get_function_address('__init_main')
+    main_ptr = engine.get_function_address('main')
     main_func = ctypes.CFUNCTYPE(None)(main_ptr)
     main_func()
+
+def print_table(table):
+    for key, value in table.items():
+        print(key, value)
+        print()
 
 if __name__ == '__main__':
     import sys
@@ -31,11 +36,17 @@ if __name__ == '__main__':
     import Table
     import TAC
     import Compiller
+    import block_print
     import llvmgen
     text = open(sys.argv[1]).read()
     AST = Parser.start_parser(text)
+    for i in range(0, len(AST)):
+        print(AST[i])
     table = Table.table_scope(AST)
+    print_table(table)
     tac = TAC.start(AST, table)
+    block_print.start(tac, 0)
     code_gen = llvmgen.generate_llvm(tac)
+    print(code_gen)
     Compiller.run(code_gen)
 
